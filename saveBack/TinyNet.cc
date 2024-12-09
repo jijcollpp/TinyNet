@@ -12,8 +12,6 @@
 #include <fcntl.h>
 #include <arpa/inet.h> //
 
-#include "threadPool.h"
-
 #define MAX_EVENT_NUMBER 10000
 #define BUFFER_SIZE 1024
 
@@ -24,7 +22,7 @@ int setnonblocking(int fd){
     return old_option;
 }
 
-void ctl_addEvent(int eventfd_, int fd_, bool et){
+epoll_event ctl_addEvent(int eventfd_, int fd_, bool et){
     epoll_event event_;
     event_.events = EPOLLIN;
     event_.data.fd = fd_;
@@ -70,17 +68,6 @@ int main(int argc, char* argv[])
     epoll_event ready_event[MAX_EVENT_NUMBER];
     //int client_event[MAX_EVENT_NUMBER];
 
-    //线程池
-    threadPool *pool = NULL;
-    try
-    {
-        pool = new threadPool;
-    }
-    catch(...)
-    {
-        return 1;
-    }
-
     while(true){
         int number = epoll_wait(epollfd_, ready_event, MAX_EVENT_NUMBER, -1);
         if(number < 0){
@@ -125,6 +112,5 @@ int main(int argc, char* argv[])
 
     close(epollfd_);
     close(listenfd_);
-    delete pool;
     return 0;
 }
