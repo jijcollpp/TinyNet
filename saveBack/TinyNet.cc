@@ -12,11 +12,8 @@
 #include <fcntl.h>
 #include <arpa/inet.h> //
 
-#include "threadPool.h"
-#include "conn.h"
-
 #define MAX_EVENT_NUMBER 10000
-#define MAX_FD 65536
+#define BUFFER_SIZE 1024
 
 int setnonblocking(int fd){
     int old_option = fcntl(fd, F_GETFL);
@@ -25,7 +22,7 @@ int setnonblocking(int fd){
     return old_option;
 }
 
-void ctl_addEvent(int eventfd_, int fd_, bool et){
+epoll_event ctl_addEvent(int eventfd_, int fd_, bool et){
     epoll_event event_;
     event_.events = EPOLLIN;
     event_.data.fd = fd_;
@@ -59,17 +56,6 @@ int main(int argc, char* argv[])
     ret = bind(listenfd_, (struct sockaddr*)&server_addr, sizeof(server_addr));
     assert(ret != -1);
 
-    //线程池
-    threadPool<conn> *pool = NULL;
-    try
-    {
-        pool = new threadPool<conn>;
-    }
-    catch(...)
-    {
-        return 1;
-    }
-
     //监听socket
     ret = listen(listenfd_, 5);
     assert(ret != -1);
@@ -80,7 +66,7 @@ int main(int argc, char* argv[])
     ctl_addEvent(epollfd_, listenfd_, false);
 
     epoll_event ready_event[MAX_EVENT_NUMBER];
-    conn* client_arr = new conn[MAX_FD];
+    //int client_event[MAX_EVENT_NUMBER];
 
     while(true){
         int number = epoll_wait(epollfd_, ready_event, MAX_EVENT_NUMBER, -1);
@@ -89,6 +75,7 @@ int main(int argc, char* argv[])
             break;
         }
 
+        char recvBuffer_[BUFFER_SIZE];
         for(int i = 0; i < number; i++){
             if(ready_event[i].data.fd == listenfd_){
                 //接受连接
@@ -97,10 +84,8 @@ int main(int argc, char* argv[])
                 int clientfd_ = accept(listenfd_, (struct sockaddr*)&client_addr, &client_socklent);
                 assert(clientfd_ != -1);
 
-                //注册事件 ET
                 ctl_addEvent(epollfd_, clientfd_, true);
-
-                client_arr[clientfd_].init(clientfd_);
+                //client_event[clientfd_] = clientfd_;
 
                 printf("new client fd %d! IP: %s Port: %d\n", 
                         clientfd_, inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
@@ -108,17 +93,24 @@ int main(int argc, char* argv[])
             else if(ready_event[i].events & EPOLLIN){
                 int client = ready_event[i].data.fd;
 
-                if(client_arr[client].read()){
-                    pool->append(client_arr+client);
-                }else{
+                memset(recvBuffer_, '\0', BUFFER_SIZE);
+                int read_bytes = recv(client, recvBuffer_, sizeof(recvBuffer_), 0);
+                if(read_bytes > 0){
+                    printf("%dusers: %s\n", client, recvBuffer_);
+                }else if(ret <= 0)
+                {
                     close(client);
+                    break;
                 }
+                
             }
         }
     }
+    
+    // TODO:
+        //12345
 
     close(epollfd_);
     close(listenfd_);
-    delete pool;
     return 0;
 }

@@ -1,1 +1,1 @@
-g++   -g -Wall    CMakeFiles/TinyNet.dir/TinyNet.cc.o  -o bin/TinyNet -rdynamic 
+g++   -g -Wall    CMakeFiles/TinyNet.dir/TinyNet.cc.o  -o bin/TinyNet -rdynamic -lpthread 

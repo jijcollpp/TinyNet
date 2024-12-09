@@ -3,3 +3,7 @@
 
 CMakeFiles/TinyNet.dir/TinyNet.cc.o
  /home/admin1/test/net/TinyNet.cc
+ /home/admin1/test/net/cond.h
+ /home/admin1/test/net/conn.h
+ /home/admin1/test/net/locker.h
+ /home/admin1/test/net/threadPool.h
