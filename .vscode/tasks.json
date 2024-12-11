@@ -5,11 +5,14 @@
     "tasks": [
         {
             "type": "shell",
-            "label": "gcc build active file",
-            "command": "/usr/bin/gcc",
+            "label": "g++ build active file",
+            "command": "/usr/bin/g++",
             "args": [
                 "-g",
+                "-O0",
                 "${file}",
+                "-lpthread",
+                "-std=c++11",
                 "-o",
                 "${fileDirname}/${fileBasenameNoExtension}"
             ],

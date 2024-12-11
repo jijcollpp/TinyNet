@@ -3,33 +3,16 @@
 #include <exception>
 #include <pthread.h>
 
-class locker
+class mutexLock
 {
 public:
-    explicit locker(mutex& mutex):mutex_(mutex)
-    {
-        mutex_.lock();
-    };
-
-    ~locker()
-    {
-        mutex_.unlock();
-    };
-
-private:
-    mutex& mutex_;
-};
-
-class mutex
-{
-public:
-    mutex(){
+    mutexLock(){
         if(pthread_mutex_init(&mutex_, NULL) != 0){
             throw std::exception();
         }
     }
 
-    ~mutex(){
+    ~mutexLock(){
         pthread_mutex_destroy(&mutex_);
     }
 
@@ -47,6 +30,23 @@ public:
 
 private:
     pthread_mutex_t mutex_;
+};
+
+class locker
+{
+public:
+    explicit locker(mutexLock& mutex):mutex_(mutex)
+    {
+        mutex_.lock();
+    };
+
+    ~locker()
+    {
+        mutex_.unlock();
+    };
+
+private:
+    mutexLock& mutex_;
 };
 
 #endif

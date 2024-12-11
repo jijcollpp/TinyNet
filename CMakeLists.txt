@@ -8,5 +8,7 @@ string(REPLACE ";" " " CMAKE_CXX_FLAGS "${CXX_FLAGS}")
 
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
 
+add_compile_options(-std=c++11)
+
 add_executable(TinyNet TinyNet.cc) 
 target_link_libraries(TinyNet pthread)

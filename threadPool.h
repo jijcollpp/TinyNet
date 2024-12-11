@@ -6,7 +6,9 @@
 #include "locker.h"
 #include "cond.h"
 
-using namespace std;
+//using namespace std;
+
+#define MAX_FD 65536
 
 template<typename T> 
 class threadPool
@@ -15,15 +17,17 @@ public:
     threadPool(int threadNum = 5);
     ~threadPool();
 
+    bool append(T* conn_);
+
 private:
     static void* work(void* arg);
     void run();
 
 private:
     pthread_t* threadArr;
-    list<T> workqueue;
+    std::list<T*> workqueue;
     bool stop;
-    mutex mutex_;
+    mutexLock mutex_;
     cond cond_;
 };
 
@@ -31,25 +35,25 @@ template<typename T>
 threadPool<T>::threadPool(int threadNum):stop(false), mutex_(), cond_(mutex_)
 {
     if(threadNum <= 0){
-        throw exception();
+        throw std::exception();
     }
 
     threadArr = new pthread_t[threadNum];
     if(!threadArr){
-        throw exception();
+        throw std::exception();
     }
 
     for (int  i = 0; i < threadNum; i++)
     {
         if(pthread_create(threadArr+i, NULL, work, this) != 0){
             delete [] threadArr;
-            throw exception();
+            throw std::exception();
         }
         printf("create the %dth thread\n", i);
 
         if(pthread_detach(threadArr[i])){
             delete [] threadArr;
-            throw exception();
+            throw std::exception();
         }
     }
     
@@ -80,7 +84,7 @@ void threadPool<T>::run()
             cond_.wait();
         }
 
-        T n_work;
+        T* n_work = nullptr;
         {
             locker locker_(mutex_);
             if(workqueue.empty()){
@@ -92,9 +96,22 @@ void threadPool<T>::run()
             workqueue.pop_front();
         }
 
-        //TODO: n_work.work();
+        n_work->process();
     }
-    
+}
+
+template<typename T>
+bool threadPool<T>::append(T* conn_)
+{
+    locker locker_(mutex_);
+    if(workqueue.size() > MAX_FD){
+        printf("server is busy!\n");
+        return false;
+    }
+    workqueue.push_back(conn_);
+
+    cond_.notify();
+    return true;
 }
 
 #endif

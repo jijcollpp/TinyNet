@@ -13,9 +13,10 @@
 #include <arpa/inet.h> //
 
 #include "threadPool.h"
+#include "conn.h"
 
 #define MAX_EVENT_NUMBER 10000
-#define BUFFER_SIZE 1024
+#define MAX_FD 65536
 
 int setnonblocking(int fd){
     int old_option = fcntl(fd, F_GETFL);
@@ -58,6 +59,17 @@ int main(int argc, char* argv[])
     ret = bind(listenfd_, (struct sockaddr*)&server_addr, sizeof(server_addr));
     assert(ret != -1);
 
+    //线程池
+    threadPool<conn> *pool = NULL;
+    try
+    {
+        pool = new threadPool<conn>;
+    }
+    catch(...)
+    {
+        return 1;
+    }
+
     //监听socket
     ret = listen(listenfd_, 5);
     assert(ret != -1);
@@ -68,18 +80,7 @@ int main(int argc, char* argv[])
     ctl_addEvent(epollfd_, listenfd_, false);
 
     epoll_event ready_event[MAX_EVENT_NUMBER];
-    //int client_event[MAX_EVENT_NUMBER];
-
-    //线程池
-    threadPool<T> *pool = NULL;
-    try
-    {
-        pool = new threadPool<T>;
-    }
-    catch(...)
-    {
-        return 1;
-    }
+    conn* client_arr = new conn[MAX_FD];
 
     while(true){
         int number = epoll_wait(epollfd_, ready_event, MAX_EVENT_NUMBER, -1);
@@ -88,7 +89,6 @@ int main(int argc, char* argv[])
             break;
         }
 
-        char recvBuffer_[BUFFER_SIZE];
         for(int i = 0; i < number; i++){
             if(ready_event[i].data.fd == listenfd_){
                 //接受连接
@@ -97,25 +97,17 @@ int main(int argc, char* argv[])
                 int clientfd_ = accept(listenfd_, (struct sockaddr*)&client_addr, &client_socklent);
                 assert(clientfd_ != -1);
 
+                //注册事件
                 ctl_addEvent(epollfd_, clientfd_, true);
-                //client_event[clientfd_] = clientfd_;
+
+                client_arr[clientfd_].init(clientfd_);
 
                 printf("new client fd %d! IP: %s Port: %d\n", 
                         clientfd_, inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
             }
             else if(ready_event[i].events & EPOLLIN){
                 int client = ready_event[i].data.fd;
-
-                memset(recvBuffer_, '\0', BUFFER_SIZE);
-                int read_bytes = recv(client, recvBuffer_, sizeof(recvBuffer_), 0);
-                if(read_bytes > 0){
-                    printf("%dusers: %s\n", client, recvBuffer_);
-                }else if(ret <= 0)
-                {
-                    close(client);
-                    break;
-                }
-                
+                pool->append(client_arr+client);
             }
         }
     }

@@ -7,7 +7,7 @@
 class cond
 {
 public:
-    cond(mutex& mutex):mutex_(mutex){
+    cond(mutexLock& mutex):mutex_(mutex){
         if(pthread_cond_init(&cond_, NULL) != 0){
             throw std::exception();
         }
@@ -23,12 +23,12 @@ public:
 
     void wait(){
         //mutex_.lock();
-        int ret = pthread_cond_wait(&cond_, mutex_.getmutex());
+        pthread_cond_wait(&cond_, mutex_.getmutex());
         //mutex_.unlock();
     }
 
 private:
-    mutex& mutex_;
+    mutexLock& mutex_;
     pthread_cond_t cond_;
 };
 
