@@ -71,10 +71,10 @@ int main(int argc, char* argv[])
     //int client_event[MAX_EVENT_NUMBER];
 
     //线程池
-    threadPool *pool = NULL;
+    threadPool<T> *pool = NULL;
     try
     {
-        pool = new threadPool;
+        pool = new threadPool<T>;
     }
     catch(...)
     {
@@ -119,9 +119,6 @@ int main(int argc, char* argv[])
             }
         }
     }
-    
-    // TODO:
-        //12345
 
     close(epollfd_);
     close(listenfd_);

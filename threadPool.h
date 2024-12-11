@@ -2,9 +2,13 @@
 #define _THREADPOOL_H_
 #include <exception>
 #include <pthread.h>
+#include <list>
+#include "locker.h"
+#include "cond.h"
 
 using namespace std;
 
+template<typename T> 
 class threadPool
 {
 public:
@@ -17,10 +21,14 @@ private:
 
 private:
     pthread_t* threadArr;
+    list<T> workqueue;
     bool stop;
+    mutex mutex_;
+    cond cond_;
 };
 
-threadPool::threadPool(int threadNum):stop(false)
+template<typename T> 
+threadPool<T>::threadPool(int threadNum):stop(false), mutex_(), cond_(mutex_)
 {
     if(threadNum <= 0){
         throw exception();
@@ -47,24 +55,44 @@ threadPool::threadPool(int threadNum):stop(false)
     
 }
 
-threadPool::~threadPool()
+template<typename T> 
+threadPool<T>::~threadPool()
 {
     delete [] threadArr;
     stop = true;
 }
 
-void* threadPool::work(void* arg)
+template<typename T> 
+void* threadPool<T>::work(void* arg)
 {
     threadPool* pool = (threadPool*)arg;
     pool->run();
     return pool;
 }
 
-void threadPool::run()
+template<typename T> 
+void threadPool<T>::run()
 {
     while(!stop)
     {
-        /* code */
+        {
+            locker locker_(mutex_);
+            cond_.wait();
+        }
+
+        T n_work;
+        {
+            locker locker_(mutex_);
+            if(workqueue.empty()){
+                continue;
+            }
+
+            n_work = workqueue.front();
+
+            workqueue.pop_front();
+        }
+
+        //TODO: n_work.work();
     }
     
 }
