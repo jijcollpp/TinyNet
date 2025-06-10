@@ -17,6 +17,9 @@ public:
     void process();
     void close_conn();
 
+public:
+    //static int ;
+
 private:
     int fd_;
     char recvBuffer_[RECV_BUFFER_SIZE];
@@ -29,13 +32,13 @@ conn::conn():fd_(-1)
 
 conn::~conn()
 {
-
-}
-
-void conn::close_conn(){
-    epoll_ctl(fd_, EPOLL_CTL_DEL, fd_);
     fd_ = -1;
 }
+
+// void conn::close_conn(){
+//     epoll_ctl(fd_, EPOLL_CTL_DEL, fd_);
+//     fd_ = -1;
+// }
 
 void conn::init(int clientfd_)
 {
