@@ -14,6 +14,8 @@
 class conn
 {
 public:
+    //请求方法
+    enum METHOD {GET = 0, POST, HEAD, PUT, DELETE, TRACE, OPTIONS, CONNECT, PATCH};
     ///主状态机
     enum CHECK_STATE {CHECK_STATE_REQUESTLINE = 0, CHECK_STATE_HEADER, CHECK_STATE_CONTENT};
     //行读取状态
@@ -34,8 +36,10 @@ public:
     void close_conn();
 
 private:
+    void init();
     HTTP_CODE process_read();
     LINE_STATUS parse_line();
+    HTTP_CODE parse_request_line(char* text);
 
     char* get_line(){return m_read_buf + m_start_line;}
 
@@ -45,11 +49,16 @@ public:
 
 private:
     int fd_;
+
     char m_read_buf[READ_BUFFER_SIZE]; //读缓冲区
     int m_read_idx; //读缓存区标识符
-
     int m_checked_idx; //从状态机读取标识符
     int m_start_line; //解析行的起始标识符
+
+    CHECK_STATE m_check_state;
+    METHOD m_method;
+    char* m_url;
+    char* m_version;
 };
 
 #endif

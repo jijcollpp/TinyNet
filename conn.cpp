@@ -43,8 +43,20 @@ void conn::init(int clientfd_)
     ctl_addEvent(m_epollfd, clientfd_, true);
     m_user_count++;
 
+    init();
+}
+
+void conn::init()
+{
     m_read_idx = 0;
     m_checked_idx = 0;
+    m_start_line = 0;
+
+    m_check_state = CHECK_STATE_REQUESTLINE;
+    m_method = GET;
+    m_url = 0;
+    m_version = 0;
+
     memset(m_read_buf, '\0', READ_BUFFER_SIZE);
 }
 
@@ -70,7 +82,7 @@ bool conn::read(){
         }
 
         m_read_idx += read_bytes;
-        printf("%dusers: %s\n", fd_, m_read_buf);
+        //printf("%dusers: %s\n", fd_, m_read_buf);
     }
     return true;
 }
@@ -98,7 +110,17 @@ conn::HTTP_CODE conn::process_read()
     {
         text = get_line();
         m_start_line = m_checked_idx;
-        printf("got 1 http line:%s\n", text);
+        printf("%s\n", text);
+
+        switch (m_check_state)
+        {
+            case CHECK_STATE_REQUESTLINE:
+                ret = parse_request_line(text);
+                break;
+            
+            default:
+                break;
+        }
     }
 }
 
@@ -135,4 +157,42 @@ conn::LINE_STATUS conn::parse_line()
         }
     }
     return LINE_OPEN;
+}
+
+/* 分析http请求行 */
+conn::HTTP_CODE conn::parse_request_line(char* text)
+{
+    m_url = strpbrk(text, " \t");
+    if(!m_url)
+    {
+        return BAD_REQUEST;
+    }
+    *m_url++ = '\0';
+
+    char* method = text;
+    if(strcasecmp(method, "GET") == 0)
+    {
+        m_method = GET;
+    }
+    else
+    {
+        return BAD_REQUEST;
+    }
+
+    m_url += strspn(m_url, " \t");
+    m_version = strpbrk(m_url, " \t");
+    if(!m_version)
+    {
+        return BAD_REQUEST;
+    }
+    *m_version++ = '\0';
+    m_version += strspn(m_version, " \t");
+
+    if(strcasecmp(m_version, "HTTP/1.1") != 0)
+    {
+        return BAD_REQUEST;
+    }
+
+    m_check_state = CHECK_STATE_HEADER;
+    return NO_REQUEST;
 }
