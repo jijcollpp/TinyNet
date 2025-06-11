@@ -14,15 +14,28 @@
 class conn
 {
 public:
-    conn(/* args */){};
+    ///主状态机
+    enum CHECK_STATE {CHECK_STATE_REQUESTLINE = 0, CHECK_STATE_HEADER, CHECK_STATE_CONTENT};
+    //行读取状态
+    enum LINE_STATUS {LINE_OK = 0, LINE_BAD, LINE_OPEN};
+    //http请求结果
+    enum HTTP_CODE {NO_REQUEST, GET_REQUEST, BAD_REQUEST,
+                    NO_RESOURCE, FORBIDDEN_REQUEST, FILE_REQUEST,
+                    INTERNAL_ERROR, CLOSED_CONNECTION};
+
+public:
+    conn(){};
     ~conn(){};
 
     void init(int clientfd_);
-
     bool read();
     bool write();
     void process();
     void close_conn();
+
+private:
+    HTTP_CODE process_read();
+    LINE_STATUS process_line();
 
 public:
     static int m_epollfd;
@@ -30,8 +43,10 @@ public:
 
 private:
     int fd_;
-    char readBuffer_[READ_BUFFER_SIZE];
-    int read_idx;
+    char m_read_buf[READ_BUFFER_SIZE]; //读缓冲区
+    int m_read_idx; //读缓存区标识符
+
+    int m_checked_idx; //从状态机读取标识符
 };
 
 #endif

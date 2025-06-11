@@ -9,7 +9,6 @@
 #include <netinet/in.h> //ipv4
 #include <unistd.h> //close
 #include <sys/epoll.h>
-//#include <fcntl.h>
 #include <arpa/inet.h> //
 
 #include "threadPool.h"
@@ -91,6 +90,8 @@ int main(int argc, char* argv[])
                 if(conn::m_user_count >= MAX_FD)
                 {
                     printf("Internal server busy\n");
+                    send(clientfd_, "Internal server busy\n", strlen("Internal server busy\n"), 0);
+                    close(clientfd_);
                     continue;
                 }
 
@@ -105,6 +106,7 @@ int main(int argc, char* argv[])
             {
                 if(client_arr[sockfd].read())
                 {
+                    //添加到线程池
                     pool->append(client_arr + sockfd);
                 }
                 else
@@ -126,6 +128,7 @@ int main(int argc, char* argv[])
 
     close(epollfd_);
     close(listenfd_);
+    delete [] client_arr;
     delete pool;
     return 0;
 }

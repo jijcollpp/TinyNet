@@ -18,13 +18,18 @@ void ctl_addEvent(int eventfd_, int fd_, bool et){
     setnonblocking(fd_);
 }
 
+void removefd(int epollfd, int fd){
+    epoll_ctl(epollfd, EPOLL_CTL_DEL, fd, 0);
+    close(fd);
+}
+
 int conn::m_epollfd = -1;
 int conn::m_user_count = 0;
 
 void conn::close_conn(){
     if(fd_ != -1)
     {
-        epoll_ctl(m_epollfd, EPOLL_CTL_DEL, fd_, 0);
+        removefd(m_epollfd, fd_);
         fd_ = -1;
         m_user_count--;
     }
@@ -38,20 +43,23 @@ void conn::init(int clientfd_)
     ctl_addEvent(m_epollfd, clientfd_, true);
     m_user_count++;
 
-    read_idx = 0;
-    memset(readBuffer_, '\0', READ_BUFFER_SIZE);
+    m_read_idx = 0;
+    memset(m_read_buf, '\0', READ_BUFFER_SIZE);
 }
 
 bool conn::read(){
-    if(read_idx >= READ_BUFFER_SIZE){
+    if(m_read_idx >= READ_BUFFER_SIZE){
         return false;
     }
 
     int read_bytes = 0;
-    while(true){
-        read_bytes = recv(fd_, readBuffer_+read_idx, READ_BUFFER_SIZE-read_idx, 0);
-        if(read_bytes == -1){
-            if(errno == EAGAIN || errno == EWOULDBLOCK){
+    while(true)
+    {
+        read_bytes = recv(fd_, m_read_buf+m_read_idx, READ_BUFFER_SIZE-m_read_idx, 0);
+        if(read_bytes == -1)
+        {
+            if(errno == EAGAIN || errno == EWOULDBLOCK)
+            {
                 break;
             }
         }
@@ -60,8 +68,8 @@ bool conn::read(){
             return false;
         }
 
-        read_idx += read_bytes;
-        printf("%dusers: %s\n", fd_, readBuffer_);
+        m_read_idx += read_bytes;
+        printf("%dusers: %s\n", fd_, m_read_buf);
     }
     return true;
 }
@@ -73,4 +81,46 @@ bool conn::write(){
 void conn::process()
 {
     
+}
+
+/* 主状态机 */
+conn::HTTP_CODE conn::process_read()
+{
+    LINE_STATUS line_status = LINE_OK;
+
+}
+
+/* 从状态机 */
+conn::LINE_STATUS conn::process_line()
+{
+    char temp;
+    for(; m_checked_idx < m_read_idx; ++m_checked_idx)
+    {
+        temp = m_read_buf[m_checked_idx];
+        if(temp == '\r')
+        {
+            if((m_checked_idx+1) == m_read_idx)
+            {
+                return LINE_OPEN;
+            }
+            else if(m_read_buf[m_checked_idx+1] == '\n')
+            {
+                m_read_buf[m_checked_idx++] = '\0';
+                m_read_buf[m_checked_idx++] = '\0';
+                return LINE_OK;
+            }
+            return LINE_BAD;
+        }
+        else if(temp == '\n')
+        {
+            if((m_checked_idx > 1) && (m_read_buf[m_checked_idx-1] == '\r'))
+            {
+                m_read_buf[m_checked_idx-1] = '\0';
+                m_read_buf[m_checked_idx++] = '\0';
+                return LINE_OK;
+            }
+            return LINE_BAD;
+        }
+    }
+    return LINE_OPEN;
 }
