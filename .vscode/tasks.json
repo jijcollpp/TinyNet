@@ -14,7 +14,8 @@
                 "-lpthread",
                 "-std=c++11",
                 "-o",
-                "${fileDirname}/${fileBasenameNoExtension}"
+                "${fileDirname}/${fileBasenameNoExtension}",
+                "${workspaceFolder}/conn.cpp"
             ],
             "options": {
                 "cwd": "/usr/bin"

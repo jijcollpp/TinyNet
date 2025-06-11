@@ -10,5 +10,5 @@ set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
 
 add_compile_options(-std=c++11)
 
-add_executable(TinyNet TinyNet.cc) 
+add_executable(TinyNet TinyNet.cc conn.cpp)
 target_link_libraries(TinyNet pthread)

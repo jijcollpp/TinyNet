@@ -45,6 +45,17 @@ int main(int argc, char* argv[])
     char* ip = argv[1];
     int port = atoi(argv[2]);
 
+    //线程池
+    threadPool<conn> *pool = NULL;
+    try
+    {
+        pool = new threadPool<conn>;
+    }
+    catch(...)
+    {
+        return 1;
+    }
+
     //创建socket
     int listenfd_ = socket(AF_INET, SOCK_STREAM, 0);
     assert(listenfd_ != -1);
@@ -59,17 +70,6 @@ int main(int argc, char* argv[])
     ret = bind(listenfd_, (struct sockaddr*)&server_addr, sizeof(server_addr));
     assert(ret != -1);
 
-    //线程池
-    threadPool<conn> *pool = NULL;
-    try
-    {
-        pool = new threadPool<conn>;
-    }
-    catch(...)
-    {
-        return 1;
-    }
-
     //监听socket
     ret = listen(listenfd_, 5);
     assert(ret != -1);
@@ -78,19 +78,23 @@ int main(int argc, char* argv[])
     int epollfd_ = epoll_create(5);
     assert(epollfd_ != -1);
     ctl_addEvent(epollfd_, listenfd_, false);
+    conn::m_epollfd = epollfd_;
 
     epoll_event ready_event[MAX_EVENT_NUMBER];
     conn* client_arr = new conn[MAX_FD];
 
     while(true){
         int number = epoll_wait(epollfd_, ready_event, MAX_EVENT_NUMBER, -1);
-        if(number < 0){
+        if((number < 0) && (errno != EINTR))
+        {
             printf("epoll failure\n");
             break;
         }
 
-        for(int i = 0; i < number; i++){
-            if(ready_event[i].data.fd == listenfd_){
+        for(int i = 0; i < number; i++)
+        {
+            int sockfd = ready_event[i].data.fd;
+            if(sockfd == listenfd_){
                 //接受连接
                 struct sockaddr_in client_addr;
                 socklen_t client_socklent = sizeof(client_socklent);
@@ -106,7 +110,7 @@ int main(int argc, char* argv[])
                         clientfd_, inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
             }
             else if(ready_event[i].events & EPOLLIN){
-                int client = ready_event[i].data.fd;
+                int client = sockfd;
 
                 if(client_arr[client].read()){
                     pool->append(client_arr+client);
