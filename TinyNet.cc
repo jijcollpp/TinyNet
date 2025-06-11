@@ -97,6 +97,10 @@ int main(int argc, char* argv[])
                 client_arr[clientfd_].init(clientfd_);
                 printf("new client fd %d! IP: %s Port: %d\n", clientfd_, inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
             }
+            else if(ready_event[i].events & (EPOLLRDHUP | EPOLLHUP | EPOLLERR))
+            {
+                client_arr[sockfd].close_conn();
+            }
             else if(ready_event[i].events & EPOLLIN)
             {
                 if(client_arr[sockfd].read())
