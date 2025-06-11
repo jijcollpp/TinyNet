@@ -2,11 +2,12 @@
 #define _CONN_H_
 #include <unistd.h>
 #include <errno.h>
-#include <string.h>
-#include <stdio.h>
+#include <string.h> //bzero/memset
+#include <stdio.h> //printf
 
 #include <sys/epoll.h>
-#include <sys/socket.h>
+#include <sys/socket.h> //socket/bind/listen/accept/recv
+#include <fcntl.h> //setnonblocking
 
 #define READ_BUFFER_SIZE 1024
 

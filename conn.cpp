@@ -1,5 +1,23 @@
 #include "conn.h"
 
+int setnonblocking(int fd){
+    int old_option = fcntl(fd, F_GETFL);
+    int new_option = old_option | O_NONBLOCK;
+    fcntl(fd, F_SETFL, new_option);
+    return old_option;
+}
+
+void ctl_addEvent(int eventfd_, int fd_, bool et){
+    epoll_event event_;
+    event_.events = EPOLLIN;
+    event_.data.fd = fd_;
+    if(et){
+        event_.events |= EPOLLET;
+    }
+    epoll_ctl(eventfd_, EPOLL_CTL_ADD, fd_, &event_);
+    setnonblocking(fd_);
+}
+
 int conn::m_epollfd = -1;
 
 void conn::close_conn(){
@@ -10,8 +28,11 @@ void conn::close_conn(){
 void conn::init(int clientfd_)
 {
     fd_ = clientfd_;
-
     read_idx = 0;
+
+    //注册事件 ET
+    ctl_addEvent(m_epollfd, clientfd_, true);
+
     memset(readBuffer_, '\0', READ_BUFFER_SIZE);
 }
 

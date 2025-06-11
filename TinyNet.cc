@@ -9,7 +9,7 @@
 #include <netinet/in.h> //ipv4
 #include <unistd.h> //close
 #include <sys/epoll.h>
-#include <fcntl.h>
+//#include <fcntl.h>
 #include <arpa/inet.h> //
 
 #include "threadPool.h"
@@ -18,23 +18,7 @@
 #define MAX_EVENT_NUMBER 10000
 #define MAX_FD 65536
 
-int setnonblocking(int fd){
-    int old_option = fcntl(fd, F_GETFL);
-    int new_option = old_option | O_NONBLOCK;
-    fcntl(fd, F_SETFL, new_option);
-    return old_option;
-}
-
-void ctl_addEvent(int eventfd_, int fd_, bool et){
-    epoll_event event_;
-    event_.events = EPOLLIN;
-    event_.data.fd = fd_;
-    if(et){
-        event_.events |= EPOLLET;
-    }
-    epoll_ctl(eventfd_, EPOLL_CTL_ADD, fd_, &event_);
-    setnonblocking(fd_);
-}
+extern int ctl_addEvent(int epollfd, int fd, bool et);
 
 int main(int argc, char* argv[])
 {
@@ -94,27 +78,28 @@ int main(int argc, char* argv[])
         for(int i = 0; i < number; i++)
         {
             int sockfd = ready_event[i].data.fd;
-            if(sockfd == listenfd_){
+            if(sockfd == listenfd_)
+            {
                 //接受连接
                 struct sockaddr_in client_addr;
                 socklen_t client_socklent = sizeof(client_socklent);
                 int clientfd_ = accept(listenfd_, (struct sockaddr*)&client_addr, &client_socklent);
-                assert(clientfd_ != -1);
-
-                //注册事件 ET
-                ctl_addEvent(epollfd_, clientfd_, true);
+                if(clientfd_ < 0){
+                    printf("errno is: %d\n", errno);
+                }
 
                 client_arr[clientfd_].init(clientfd_);
-
-                printf("new client fd %d! IP: %s Port: %d\n", 
-                        clientfd_, inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
+                printf("new client fd %d! IP: %s Port: %d\n", clientfd_, inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
             }
-            else if(ready_event[i].events & EPOLLIN){
+            else if(ready_event[i].events & EPOLLIN)
+            {
                 int client = sockfd;
 
-                if(client_arr[client].read()){
+                if(client_arr[client].read())
+                {
                     pool->append(client_arr+client);
-                }else{
+                }else
+                {
                     close(client);
                 }
             }
