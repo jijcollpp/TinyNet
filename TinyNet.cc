@@ -99,14 +99,13 @@ int main(int argc, char* argv[])
             }
             else if(ready_event[i].events & EPOLLIN)
             {
-                int client = sockfd;
-
-                if(client_arr[client].read())
+                if(client_arr[sockfd].read())
                 {
-                    pool->append(client_arr+client);
-                }else
+                    pool->append(client_arr + sockfd);
+                }
+                else
                 {
-                    close(client);
+                    client_arr[sockfd].close_conn();
                 }
             }
         }
