@@ -19,20 +19,26 @@ void ctl_addEvent(int eventfd_, int fd_, bool et){
 }
 
 int conn::m_epollfd = -1;
+int conn::m_user_count = 0;
 
 void conn::close_conn(){
-    epoll_ctl(m_epollfd, EPOLL_CTL_DEL, fd_, 0);
-    fd_ = -1;
+    if(fd_ != -1)
+    {
+        epoll_ctl(m_epollfd, EPOLL_CTL_DEL, fd_, 0);
+        fd_ = -1;
+        m_user_count--;
+    }
 }
 
 void conn::init(int clientfd_)
 {
     fd_ = clientfd_;
-    read_idx = 0;
 
     //注册事件 ET
     ctl_addEvent(m_epollfd, clientfd_, true);
+    m_user_count++;
 
+    read_idx = 0;
     memset(readBuffer_, '\0', READ_BUFFER_SIZE);
 }
 

@@ -25,6 +25,7 @@ public:
 
 public:
     static int m_epollfd;
+    static int m_user_count;
 
 private:
     int fd_;

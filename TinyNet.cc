@@ -84,8 +84,14 @@ int main(int argc, char* argv[])
                 struct sockaddr_in client_addr;
                 socklen_t client_socklent = sizeof(client_socklent);
                 int clientfd_ = accept(listenfd_, (struct sockaddr*)&client_addr, &client_socklent);
-                if(clientfd_ < 0){
+                if(clientfd_ < 0)
+                {
                     printf("errno is: %d\n", errno);
+                }
+                if(conn::m_user_count >= MAX_FD)
+                {
+                    printf("Internal server busy\n");
+                    continue;
                 }
 
                 client_arr[clientfd_].init(clientfd_);
