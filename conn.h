@@ -35,7 +35,9 @@ public:
 
 private:
     HTTP_CODE process_read();
-    LINE_STATUS process_line();
+    LINE_STATUS parse_line();
+
+    char* get_line(){return m_read_buf + m_start_line;}
 
 public:
     static int m_epollfd;
@@ -47,6 +49,7 @@ private:
     int m_read_idx; //读缓存区标识符
 
     int m_checked_idx; //从状态机读取标识符
+    int m_start_line; //解析行的起始标识符
 };
 
 #endif

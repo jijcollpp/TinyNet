@@ -44,6 +44,7 @@ void conn::init(int clientfd_)
     m_user_count++;
 
     m_read_idx = 0;
+    m_checked_idx = 0;
     memset(m_read_buf, '\0', READ_BUFFER_SIZE);
 }
 
@@ -78,20 +79,31 @@ bool conn::write(){
     return false;
 }
 
+/********************************************************************************************/
+
 void conn::process()
 {
-    
+    HTTP_CODE read_ret = process_read();
+    //printf("%s\n", read_ret);
 }
 
 /* 主状态机 */
 conn::HTTP_CODE conn::process_read()
 {
     LINE_STATUS line_status = LINE_OK;
+    HTTP_CODE ret = NO_REQUEST;
+    char* text = 0;
 
+    while ((line_status = parse_line()) == LINE_OK)
+    {
+        text = get_line();
+        m_start_line = m_checked_idx;
+        printf("got 1 http line:%s\n", text);
+    }
 }
 
 /* 从状态机 */
-conn::LINE_STATUS conn::process_line()
+conn::LINE_STATUS conn::parse_line()
 {
     char temp;
     for(; m_checked_idx < m_read_idx; ++m_checked_idx)

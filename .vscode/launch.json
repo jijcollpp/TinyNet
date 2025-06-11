@@ -9,7 +9,8 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${fileDirname}/${fileBasenameNoExtension}",
-            "args": ["127.0.0.1", "8001"],
+            //如果要本地浏览器，访问虚拟机上运行的服务器，就不要使用localhost
+            "args": ["192.168.56.103", "8002"],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],
