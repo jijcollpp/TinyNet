@@ -51,11 +51,14 @@ void conn::init()
     m_read_idx = 0;
     m_checked_idx = 0;
     m_start_line = 0;
+    m_content_length = 0;
 
     m_check_state = CHECK_STATE_REQUESTLINE;
     m_method = GET;
     m_url = 0;
     m_version = 0;
+    m_host = 0;
+    m_linger = false;
 
     memset(m_read_buf, '\0', READ_BUFFER_SIZE);
 }
@@ -115,13 +118,47 @@ conn::HTTP_CODE conn::process_read()
         switch (m_check_state)
         {
             case CHECK_STATE_REQUESTLINE:
+            {
                 ret = parse_request_line(text);
+                if(ret == BAD_REQUEST)
+                {
+                    return BAD_REQUEST;
+                }
                 break;
+            }
+
+            case CHECK_STATE_HEADER:
+            {
+                ret = parse_headers_line(text);
+                if(ret == BAD_REQUEST)
+                {
+                    return BAD_REQUEST;
+                }
+                else if(ret == GET_REQUEST)
+                {
+                    
+                }
+                
+                break;
+            }
+
+            case CHECK_STATE_CONTENT:
+            {
+                ret = parse_request_line(text);
+                if(ret == BAD_REQUEST)
+                {
+                    return BAD_REQUEST;
+                }
+                break;
+            }
             
             default:
-                break;
+            {
+                return INTERNAL_ERROR;
+            }
         }
     }
+    return NO_REQUEST;
 }
 
 /* 从状态机 */
@@ -159,7 +196,7 @@ conn::LINE_STATUS conn::parse_line()
     return LINE_OPEN;
 }
 
-/* 分析http请求行 */
+/* 解析http请求行 */
 conn::HTTP_CODE conn::parse_request_line(char* text)
 {
     m_url = strpbrk(text, " \t");
@@ -194,5 +231,45 @@ conn::HTTP_CODE conn::parse_request_line(char* text)
     }
 
     m_check_state = CHECK_STATE_HEADER;
+    return NO_REQUEST;
+}
+
+/* 解析http头部行 */
+conn::HTTP_CODE conn::parse_headers_line(char* text)
+{
+    if(text[0] == '\0')
+    {
+        if(m_content_length != 0)
+        {
+            m_check_state = CHECK_STATE_CONTENT;
+            return NO_REQUEST;
+        }
+        return GET_REQUEST;
+    }
+    else if(strncasecmp(text, "Host:", 5) == 0)
+    {
+        text += 5;
+        text += strspn(text, " \t");
+        m_host = text;
+    }
+    else if(strncasecmp(text, "Connection:", 11) == 0)
+    {
+        text += 11;
+        text += strspn(text, " \t");
+        if(strcasecmp(text, "keep-alive") == 0)
+        {
+            m_linger = true;
+        }
+    }
+    else if(strncasecmp(text, "Content-Length:", 15) == 0)
+    {
+        text += 15;
+        text += strspn(text, " \t");
+        m_content_length = atol(text);
+    }
+    else
+    {
+        printf("oop! 不知道的header %s\n", text);
+    }
     return NO_REQUEST;
 }

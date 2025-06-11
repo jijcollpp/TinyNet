@@ -4,6 +4,7 @@
 #include <errno.h>
 #include <string.h> //bzero/memset
 #include <stdio.h> //printf
+#include <cstdlib> //atol
 
 #include <sys/epoll.h>
 #include <sys/socket.h> //socket/bind/listen/accept/recv
@@ -40,6 +41,7 @@ private:
     HTTP_CODE process_read();
     LINE_STATUS parse_line();
     HTTP_CODE parse_request_line(char* text);
+    HTTP_CODE parse_headers_line(char* text);
 
     char* get_line(){return m_read_buf + m_start_line;}
 
@@ -54,11 +56,14 @@ private:
     int m_read_idx; //读缓存区标识符
     int m_checked_idx; //从状态机读取标识符
     int m_start_line; //解析行的起始标识符
+    int m_content_length; //消息体长度
 
     CHECK_STATE m_check_state;
     METHOD m_method;
     char* m_url;
     char* m_version;
+    char* m_host;
+    int m_linger; //socket是否保持连接
 };
 
 #endif
