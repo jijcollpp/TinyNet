@@ -66,6 +66,10 @@ bool conn::read(){
     return true;
 }
 
+bool conn::write(){
+    return false;
+}
+
 void conn::process()
 {
     

@@ -20,6 +20,7 @@ public:
     void init(int clientfd_);
 
     bool read();
+    bool write();
     void process();
     void close_conn();
 

@@ -112,6 +112,15 @@ int main(int argc, char* argv[])
                     client_arr[sockfd].close_conn();
                 }
             }
+            else if(ready_event[i].events & EPOLLOUT)
+            {
+                if(!client_arr[sockfd].write())
+                {
+                    client_arr[sockfd].close_conn();
+                }
+            }
+            else
+            {}
         }
     }
 
