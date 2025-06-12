@@ -23,8 +23,17 @@ void removefd(int epollfd, int fd){
     close(fd);
 }
 
+void modfd(int eventfd_, int fd_, bool ev){
+    epoll_event event_;
+    event_.data.fd = fd_;
+    event_.events = ev | EPOLLET | EPOLLONESHOT | EPOLLRDHUP;
+    epoll_ctl(eventfd_, EPOLL_CTL_MOD, fd_, &event_);
+}
+
 int conn::m_epollfd = -1;
 int conn::m_user_count = 0;
+
+/************************************************************************************************/
 
 void conn::close_conn(){
     if(fd_ != -1)
@@ -99,7 +108,12 @@ bool conn::write(){
 void conn::process()
 {
     HTTP_CODE read_ret = process_read();
-    //printf("%s\n", read_ret);
+    if(read_ret == NO_REQUEST)
+    {
+        modfd(m_epollfd, fd_, EPOLLIN);
+        return;
+    }
+    
 }
 
 /* 主状态机 */
@@ -136,9 +150,8 @@ conn::HTTP_CODE conn::process_read()
                 }
                 else if(ret == GET_REQUEST)
                 {
-                    
+                    return do_request();
                 }
-                
                 break;
             }
 
@@ -234,6 +247,17 @@ conn::HTTP_CODE conn::parse_request_line(char* text)
         return BAD_REQUEST;
     }
 
+    if(strncasecmp(m_url, "http://", 7) == 0)
+    {
+        m_url += 7;
+        m_url = strchr(m_url, '/');
+    }
+
+    if(!m_url || m_url[0] != '/')
+    {
+        return BAD_REQUEST;
+    }
+
     m_check_state = CHECK_STATE_HEADER;
     return NO_REQUEST;
 }
@@ -287,4 +311,9 @@ conn::HTTP_CODE conn::parse_content_line(char* text)
         return GET_REQUEST;
     }
     return NO_REQUEST;
+}
+
+conn::HTTP_CODE conn::do_request()
+{
+
 }

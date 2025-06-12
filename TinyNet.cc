@@ -102,7 +102,7 @@ int main(int argc, char* argv[])
             {
                 client_arr[sockfd].close_conn();
             }
-            else if(ready_event[i].events & EPOLLIN)
+            else if(ready_event[i].events & EPOLLIN) //可读
             {
                 if(client_arr[sockfd].read())
                 {
@@ -114,7 +114,7 @@ int main(int argc, char* argv[])
                     client_arr[sockfd].close_conn();
                 }
             }
-            else if(ready_event[i].events & EPOLLOUT)
+            else if(ready_event[i].events & EPOLLOUT) //可写
             {
                 if(!client_arr[sockfd].write())
                 {

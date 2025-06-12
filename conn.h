@@ -43,6 +43,7 @@ private:
     HTTP_CODE parse_request_line(char* text);
     HTTP_CODE parse_headers_line(char* text);
     HTTP_CODE parse_content_line(char* text);
+    HTTP_CODE do_request();
 
     char* get_line(){return m_read_buf + m_start_line;}
 
@@ -61,8 +62,8 @@ private:
 
     CHECK_STATE m_check_state;
     METHOD m_method;
-    char* m_url;
     char* m_version;
+    char* m_url; //访问的index.html文件
     char* m_host;
     int m_linger; //socket是否保持连接
 };
