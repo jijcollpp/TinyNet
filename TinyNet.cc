@@ -43,6 +43,9 @@ int main(int argc, char* argv[])
     int listenfd_ = socket(AF_INET, SOCK_STREAM, 0);
     assert(listenfd_ != -1);
 
+    int reuse = 1;
+    setsockopt(listenfd_, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse));
+
     int ret = 0;
     //命名socket
     struct sockaddr_in server_addr;
@@ -96,7 +99,7 @@ int main(int argc, char* argv[])
                 }
 
                 client_arr[clientfd_].init(clientfd_);
-                printf("new client fd %d! IP: %s Port: %d\n", clientfd_, inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
+                //printf("new client fd %d! IP: %s Port: %d\n", clientfd_, inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
             }
             else if(ready_event[i].events & (EPOLLRDHUP | EPOLLHUP | EPOLLERR))
             {
