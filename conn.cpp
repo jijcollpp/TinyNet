@@ -144,7 +144,7 @@ conn::HTTP_CODE conn::process_read()
 
             case CHECK_STATE_CONTENT:
             {
-                ret = parse_request_line(text);
+                ret = parse_content_line(text);
                 if(ret == BAD_REQUEST)
                 {
                     return BAD_REQUEST;
@@ -211,6 +211,10 @@ conn::HTTP_CODE conn::parse_request_line(char* text)
     {
         m_method = GET;
     }
+    else if(strcasecmp(method, "POST") == 0)
+    {
+        m_method = POST;
+    }
     else
     {
         return BAD_REQUEST;
@@ -270,6 +274,17 @@ conn::HTTP_CODE conn::parse_headers_line(char* text)
     else
     {
         printf("oop! 不知道的header %s\n", text);
+    }
+    return NO_REQUEST;
+}
+
+/* 解析http头部行 */
+conn::HTTP_CODE conn::parse_content_line(char* text)
+{
+    if(m_read_idx >= (m_checked_idx + m_content_length))
+    {
+        printf("post data: %s\n", text);
+        return GET_REQUEST;
     }
     return NO_REQUEST;
 }
